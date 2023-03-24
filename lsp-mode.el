@@ -5934,10 +5934,35 @@ Request codeAction/resolve for more info if server supports."
     (default                    . standard-indent))                 ; default fallback
   "A mapping from `major-mode' to its indent variable.")
 
+(defvar lsp--extention-formatting-indent-alist  
+  '()
+  "Map of file extetions string to indent variable.
+
+Association list that binds file extetion string to variable with the
+desired tab width.
+Note that `lsp--formatting-indent-alist' takes precedence.")
+
 (defun lsp--get-indent-width (mode)
+  "Get indentention offset from MODE or current file."
+  (or (lsp--get-indent-from-mode mode)
+      (lsp--get-indent-from-file-name)
+      (lsp--get-indent-from-mode 'default)))
+
+(defun lsp--get-indent-from-mode (mode)
   "Get indentation offset for MODE."
   (or (alist-get mode lsp--formatting-indent-alist)
-      (lsp--get-indent-width (or (get mode 'derived-mode-parent) 'default))))
+      (let ((parent (get mode 'derived-mode-parent)))
+        (if parent
+            (lsp--get-indent-from-mode parent)))))
+
+
+(defun lsp--get-indent-from-file-name ()
+  "Get indentation offset from current file."
+  (let ((file (buffer-file-name)))
+    (if file
+        (cdr (assoc (file-name-extension file) lsp--extention-formatting-indent-alist)))))
+
+
 
 (defun lsp--make-document-formatting-params ()
   "Create document formatting params."
